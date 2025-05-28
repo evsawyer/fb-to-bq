@@ -5,3 +5,19 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 requires-python = ">=3.11"
 dependencies = []
+
+[tool.poetry]
+name = "facebook"
+version = "0.1.0"
+description = ""
+authors = ["Celina <117782325+celinerss@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+facebook-business = "^22.0.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
