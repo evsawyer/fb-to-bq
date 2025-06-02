@@ -24,6 +24,20 @@ def get_campaigns():
 
 def get_ad_insights(ad_id):
     """Fetch and print insights for a specific ad."""
+    # Comprehensive list of available fields
+    fields = [
+        'account_id', 'ad_id', 'ad_name', 'adset_id', 'adset_name', 
+        'campaign_id', 'campaign_name', 'date_start', 'date_stop',
+        'impressions', 'reach', 'spend', 'clicks', 'cpc', 'cpm', 'cpp',
+        'ctr', 'frequency', 'actions', 'action_values', 'cost_per_action_type',
+        'cost_per_unique_action_type', 'unique_actions', 'video_play_actions',
+        'video_p25_watched_actions', 'video_p50_watched_actions', 
+        'video_p75_watched_actions', 'video_p100_watched_actions',
+        'objective', 'optimization_goal', 'quality_ranking', 'engagement_rate_ranking',
+        'conversion_rate_ranking', 'cost_per_inline_link_click', 'inline_link_clicks',
+        'inline_link_click_ctr', 'website_ctr'
+    ]
+    
     params = {
         'date_preset': 'this_month',
         'level': 'ad',
@@ -31,7 +45,7 @@ def get_ad_insights(ad_id):
     }
 
     ad = Ad(ad_id)
-    insights = ad.get_insights(params=params)
+    insights = ad.get_insights(fields=fields, params=params)
 
     for row in insights:
         print(f"\n--- Ad Insights ---")
