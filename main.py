@@ -24,21 +24,6 @@ def get_campaigns():
 
 def get_ad_insights(ad_id):
     """Fetch and print insights for a specific ad."""
-    fields = [
-        'ad_name',
-        'campaign_name',
-        'impressions',
-        'reach',
-        'spend',
-        'clicks',
-        'actions',
-        'cost_per_action_type',
-        'objective',
-        'adset_name',
-        'date_start',
-        'date_stop'
-    ]
-
     params = {
         'date_preset': 'this_month',
         'level': 'ad',
@@ -46,22 +31,13 @@ def get_ad_insights(ad_id):
     }
 
     ad = Ad(ad_id)
-    insights = ad.get_insights(fields=fields, params=params)
+    insights = ad.get_insights(params=params)
 
     for row in insights:
-        print(f"\nAd: {row['ad_name']}")
-        print(f"Impressions: {row['impressions']}")
-        print(f"Reach: {row['reach']}")
-        print(f"Spend: ${row['spend']}")
-        print(f"Clicks: {row.get('clicks', 0)}")
-
-        actions = row.get('actions', [])
-        for action in actions:
-            print(f"Action: {action['action_type']} — Value: {action['value']}")
-
-        costs = row.get('cost_per_action_type', [])
-        for cost in costs:
-            print(f"Cost per {cost['action_type']}: ${cost['value']}")
+        print(f"\n--- Ad Insights ---")
+        # Print all available fields and their values
+        for key, value in row.items():
+            print(f"{key}: {value}")
 
 
 if __name__ == '__main__':
