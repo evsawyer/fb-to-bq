@@ -81,7 +81,7 @@ if __name__ == '__main__':
     get_campaigns()
 
     print("\nFetching insights for specific ad...")
-    ad_id = '120228059424470226'  # Replace with a real ad ID
+    ad_id = '120228502463500226'  # Replace with a real ad ID
     try:
         get_ad_insights(ad_id)
     except Exception as e:
