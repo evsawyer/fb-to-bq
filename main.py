@@ -11,7 +11,6 @@ APP_SECRET = os.getenv('FB_APP_SECRET')
 
 FacebookAdsApi.init(APP_ID, APP_SECRET, ACCESS_TOKEN)
 
-
 def get_campaigns():
     """Fetch and print all campaigns for the ad account."""
     account = AdAccount(AD_ACCOUNT_ID)
@@ -61,7 +60,7 @@ def get_ad_insights(ad_id):
     ]
 
     params = {
-        'date_preset': 'this_month',
+        'date_preset': 'last_month',
         'level': 'ad',
         'time_increment': 1
     }
@@ -77,8 +76,8 @@ def get_ad_insights(ad_id):
 
 
 if __name__ == '__main__':
-    print("Fetching campaigns...")
-    get_campaigns()
+  #  print("Fetching campaigns...")
+    #get_campaigns()
 
     print("\nFetching insights for specific ad...")
     ad_id = '120228059424470226'  # Replace with a real ad ID
