@@ -20,4 +20,32 @@ def get_campaigns():
   for campaign in campaigns:
       print(f"  ID: {campaign['id']} | Name: {campaign['name']}")
 
+
+def get_all_ad_ids():
+  """Extract all ad IDs from all campaigns and return as a list."""
+  account = AdAccount(AD_ACCOUNT_ID)
+  campaigns = account.get_campaigns(fields=['id', 'name'])
+  
+  all_ad_ids = []
+  
+  print("Extracting ad IDs from campaigns...")
+  for campaign in campaigns:
+      print(f"Processing campaign: {campaign['name']} (ID: {campaign['id']})")
+      
+      # Get ads for this campaign
+      ads = campaign.get_ads(fields=['id', 'name'])
+      
+      for ad in ads:
+          all_ad_ids.append(ad['id'])
+          print(f"  Found ad: {ad['name']} (ID: {ad['id']})")
+  
+  print(f"\nTotal ads found: {len(all_ad_ids)}")
+  return all_ad_ids
+
+
+if __name__ == '__main__':
+    # Get all ad IDs
+    ad_ids = get_all_ad_ids()
+    print(f"\nAll Ad IDs: {ad_ids}")
+
   
