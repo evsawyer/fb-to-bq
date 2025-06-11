@@ -11,14 +11,14 @@ APP_SECRET = os.getenv('FB_APP_SECRET')
 
 FacebookAdsApi.init(APP_ID, APP_SECRET, ACCESS_TOKEN)
 
-def get_campaigns():
-  """Fetch and print all campaigns for the ad account."""
-  account = AdAccount(AD_ACCOUNT_ID)
-  campaigns = account.get_campaigns(fields=['id', 'name'])
+# def get_campaigns():
+#   """Fetch and print all campaigns for the ad account."""
+#   account = AdAccount(AD_ACCOUNT_ID)
+#   campaigns = account.get_campaigns(fields=['id', 'name'])
 
-  print("Campaigns:")
-  for campaign in campaigns:
-      print(f"  ID: {campaign['id']} | Name: {campaign['name']}")
+#   print("Campaigns:")
+#   for campaign in campaigns:
+#       print(f"  ID: {campaign['id']} | Name: {campaign['name']}")
 
 
 def get_all_ad_ids():
@@ -42,10 +42,7 @@ def get_all_ad_ids():
   print(f"\nTotal ads found: {len(all_ad_ids)}")
   return all_ad_ids
 
-
 if __name__ == '__main__':
     # Get all ad IDs
     ad_ids = get_all_ad_ids()
     print(f"\nAll Ad IDs: {ad_ids}")
-
-  
