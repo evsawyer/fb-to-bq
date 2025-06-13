@@ -1,0 +1,63 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - .
+      - '-f'
+      - Dockerfile
+    id: Build
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - '--platform=managed'
+      - >-
+        --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - >-
+        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+      - >-
+        --set-secrets=FB_ACCESS_TOKEN=projects/104817932138/secrets/FB_ACCESS_TOKEN:latest
+      - >-
+        --set-secrets=FB_APP_ID=projects/104817932138/secrets/FB_APP_ID:latest
+      - >-
+        --set-secrets=FB_APP_SECRET=projects/104817932138/secrets/FB_APP_SECRET:latest
+      - >-
+        --set-secrets=FB_AD_ACCOUNT_ID=projects/104817932138/secrets/FB_AD_ACCOUNT_ID:latest
+      - >-
+        --set-secrets=GOOGLE_CREDENTIALS=projects/104817932138/secrets/GOOGLE_CREDENTIALS:latest
+      - '--update-env-vars=DATASET_ID=${_DATASET_ID}'
+      - '--update-env-vars=TABLE_ID=${_TABLE_ID}'
+    id: Deploy
+    entrypoint: gcloud
+images:
+  - >-
+    $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _AR_HOSTNAME: europe-west1-docker.pkg.dev
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _AR_PROJECT_ID: ivc-media-ads-warehouse
+  _PLATFORM: managed
+  _SERVICE_NAME: fb-to-bq
+  _TRIGGER_ID: 42214410-5f34-43a4-a13a-9f0b83feb88e
+  _DEPLOY_REGION: europe-west1
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - fb-to-bq

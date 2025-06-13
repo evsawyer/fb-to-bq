@@ -13,18 +13,32 @@ logging.basicConfig(
 logger = logging.getLogger('bigquery')
 
 def get_bigquery_client():
-    """Initialize BigQuery client with specific credentials."""
-    
-    credentials_path = "credentials.json"
-    if not os.path.exists(credentials_path):
-        raise ValueError("credentials.json file not found in current directory")
-    
-    credentials = service_account.Credentials.from_service_account_file(credentials_path)
-    
-    return bigquery.Client(
-        project=credentials.project_id,
-        credentials=credentials
-    )
+    """Initialize BigQuery client with credentials from either file or environment variable."""
+    try:
+        # First try to get credentials from environment variable (production)
+        credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+        
+        if credentials_json:
+            # Production: Use credentials from environment variable
+            credentials_info = json.loads(credentials_json)
+            credentials = service_account.Credentials.from_service_account_info(credentials_info)
+        else:
+            # Local: Try to use credentials file
+            credentials_path = "credentials.json"
+            if not os.path.exists(credentials_path):
+                raise ValueError("No credentials found in environment variable or local file")
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+        
+        return bigquery.Client(
+            project=credentials.project_id,
+            credentials=credentials
+        )
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse credentials JSON: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Failed to initialize BigQuery client: {str(e)}")
+        raise
 
 client = get_bigquery_client()
 
