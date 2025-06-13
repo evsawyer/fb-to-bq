@@ -39,8 +39,6 @@ steps:
         --set-secrets=FB_AD_ACCOUNT_ID=projects/104817932138/secrets/FB_AD_ACCOUNT_ID:latest
       - >-
         --set-secrets=GOOGLE_CREDENTIALS=projects/104817932138/secrets/GOOGLE_CREDENTIALS:latest
-      - '--update-env-vars=DATASET_ID=${_DATASET_ID}'
-      - '--update-env-vars=TABLE_ID=${_TABLE_ID}'
     id: Deploy
     entrypoint: gcloud
 images:
