@@ -30,15 +30,15 @@ steps:
       - '--region=$_DEPLOY_REGION'
       - '--quiet'
       - >-
-        --set-secrets=FB_ACCESS_TOKEN=projects/104817932138/secrets/FB_ACCESS_TOKEN:latest
+        --set-secrets=FB_ACCESS_TOKEN=projects/942133991036/secrets/FB_ACCESS_TOKEN:latest
       - >-
-        --set-secrets=FB_APP_ID=projects/104817932138/secrets/FB_APP_ID:latest
+        --set-secrets=FB_APP_ID=projects/942133991036/secrets/FB_APP_ID:latest
       - >-
-        --set-secrets=FB_APP_SECRET=projects/104817932138/secrets/FB_APP_SECRET:latest
+        --set-secrets=FB_APP_SECRET=projects/942133991036/secrets/FB_APP_SECRET:latest
       - >-
-        --set-secrets=FB_AD_ACCOUNT_ID=projects/104817932138/secrets/FB_AD_ACCOUNT_ID:latest
+        --set-secrets=FB_AD_ACCOUNT_ID=projects/942133991036/secrets/FB_AD_ACCOUNT_ID:latest
       - >-
-        --set-secrets=GOOGLE_CREDENTIALS=projects/104817932138/secrets/GOOGLE_CREDENTIALS:latest
+        --set-secrets=GOOGLE_CREDENTIALS=projects/942133991036/secrets/GOOGLE_CREDENTIALS:latest
     id: Deploy
     entrypoint: gcloud
 images:
