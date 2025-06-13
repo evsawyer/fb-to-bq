@@ -1,23 +1,19 @@
 [project]
-name = "python-template"
-version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
-requires-python = ">=3.11"
-dependencies = []
-
-[tool.poetry]
 name = "facebook"
 version = "0.1.0"
 description = ""
 authors = ["Celina <117782325+celinerss@users.noreply.github.com>"]
-readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "facebook-business>=22.0.5",
+    "fastapi>=0.115.12",
+    "google-auth>=2.40.3",
+    "google-cloud>=0.34.0",
+    "google-cloud-bigquery>=3.34.0",
+    "ipykernel>=6.29.5",
+    "pandas>=2.3.0",
+    "pyspark>=4.0.0",
+    "python-dotenv>=1.1.0",
+    "uvicorn>=0.34.3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-facebook-business = "^22.0.5"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

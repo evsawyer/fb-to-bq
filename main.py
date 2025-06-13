@@ -1,87 +1,78 @@
+from fastapi import FastAPI, HTTPException
+from bigquery import get_existing_records, separate_records, get_table_schema, process_records
+from facebook import get_ads_insights, get_all_ad_ids
+from validate import analyze_insights_structure, validate_insight, prepare_for_bigquery
+from dotenv import load_dotenv
 import os
-from facebook_business.api import FacebookAdsApi
-from facebook_business.adobjects.adaccount import AdAccount
-from facebook_business.adobjects.ad import Ad
+from typing import List, Dict, Any
+import asyncio
 
-# Init Facebook API
-ACCESS_TOKEN = os.getenv('FB_ACCESS_TOKEN')
-AD_ACCOUNT_ID = os.getenv('FB_AD_ACCOUNT_ID')
-APP_ID = os.getenv('FB_APP_ID')
-APP_SECRET = os.getenv('FB_APP_SECRET')
+load_dotenv()
 
-FacebookAdsApi.init(APP_ID, APP_SECRET, ACCESS_TOKEN)
+app = FastAPI(
+    title="Facebook Ads to BigQuery Sync",
+    description="API to sync Facebook Ads insights data to BigQuery"
+)
 
-def get_campaigns():
-    """Fetch and print all campaigns for the ad account."""
-    account = AdAccount(AD_ACCOUNT_ID)
-    campaigns = account.get_campaigns(fields=['id', 'name'])
-
-    print("Campaigns:")
-    for campaign in campaigns:
-        print(f"  ID: {campaign['id']} | Name: {campaign['name']}")
-
-
-def get_ad_insights(ad_id):
-    """Fetch and print insights for a specific ad."""
-    # Comprehensive list of available fields
-    fields = [
-        # Metadata
-        'account_id', 'account_name', 'account_currency',
-        'ad_id', 'ad_name', 'adset_id', 'adset_name', 
-        'campaign_id', 'campaign_name',
-        'date_start', 'date_stop',
-
-        # Basic performance
-        'impressions', 'reach', 'frequency',
-        'spend', 'clicks', 'cpc', 'cpm', 'cpp', 'ctr',
-        'unique_clicks', 'unique_ctr', 'cost_per_unique_click',
-
-        # Website interactions
-        'inline_link_clicks', 'inline_link_click_ctr', 'website_ctr',
-
-        # Action metrics
-        'actions', 'action_values',
-        'unique_actions',
-        'cost_per_action_type', 'cost_per_unique_action_type',
-
-        # ROAS
-        'purchase_roas',
-
-        # Video engagement
-        'video_play_actions', 'video_avg_time_watched_actions',
-        'video_p25_watched_actions', 'video_p50_watched_actions',
-        'video_p75_watched_actions', 'video_p100_watched_actions',
-
-        # Ad quality diagnostics
-        'quality_ranking', 'engagement_rate_ranking', 'conversion_rate_ranking',
-
-        # Objectives
-        'objective', 'optimization_goal'
-    ]
-
-    params = {
-        'date_preset': 'last_month',
-        'level': 'ad',
-        'time_increment': 1
-    }
-
-    ad = Ad(ad_id)
-    insights = ad.get_insights(fields=fields, params=params)
-
-    for row in insights:
-        print(f"\n--- Ad Insights ---")
-        # Print all available fields and their values
-        for key, value in row.items():
-            print(f"{key}: {value}")
-
-
-if __name__ == '__main__':
-  #  print("Fetching campaigns...")
-    #get_campaigns()
-
-    print("\nFetching insights for specific ad...")
-    ad_id = '120228059424470226'  # Replace with a real ad ID
+@app.post("/sync-ads-insights")
+async def sync_ads_insights() -> Dict[str, Any]:
+    """
+    Endpoint to fetch Facebook Ads insights and sync them to BigQuery.
+    This endpoint:
+    1. Fetches all ad IDs
+    2. Gets insights for those ads
+    3. Validates and prepares the data
+    4. Syncs with BigQuery (updates/inserts as needed)
+    """
     try:
-        get_ad_insights(ad_id)
+        # 1. Get Facebook Ads data
+        ad_ids = get_all_ad_ids()
+        raw_insights = get_ads_insights(ad_ids)
+        insights_list = [x for x in raw_insights]
+
+        # 2. Validate and prepare records
+        valid_insights = []
+        for insight in insights_list:
+            if validate_insight(insight):
+                prepared_data = prepare_for_bigquery(insight)
+                if prepared_data:
+                    valid_insights.append(prepared_data)
+
+        if not valid_insights:
+            raise HTTPException(
+                status_code=400,
+                detail="No valid insights found to process"
+            )
+
+        # 3. Get BigQuery configuration
+        dataset_id = os.getenv('DATASET_ID')
+        table_id = os.getenv('TABLE_ID')
+
+        # 4. Get existing records
+        # date_starts = list(set(r['date_start'] for r in valid_insights))
+        # date_stops = list(set(r['date_stop'] for r in valid_insights))
+        # ad_ids = list(set(r['ad_id'] for r in valid_insights))
+
+        # existing = list(get_existing_records(dataset_id, table_id, date_starts, date_stops, ad_ids))
+
+        # # 5. Separate updates and inserts
+        # updates, inserts = separate_records(valid_insights, existing)
+
+        # 6. Process records
+        await asyncio.to_thread(
+            process_records,
+            dataset_id=dataset_id,
+            table_id=table_id,
+            new_records=valid_insights,
+            batch_size=1000
+        )
+
+        return {
+            "status": "success",
+        }
+
     except Exception as e:
-        print(f"Error fetching insights: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing ads insights: {str(e)}"
+        )
