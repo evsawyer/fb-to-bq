@@ -7,9 +7,16 @@ import os
 from typing import List, Dict, Any
 import asyncio
 import logging
+import sys
+
+# Configure root logger to capture all modules
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout  # Important for Cloud Run
+)
 
 logger = logging.getLogger(__name__)
-
 load_dotenv()
 
 app = FastAPI(
