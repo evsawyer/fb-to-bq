@@ -39,7 +39,12 @@ def get_all_ad_ids():
 
   ad_account_ids = os.getenv('FB_AD_ACCOUNT_ID')
   if ad_account_ids:
-      ad_account_ids = json.loads(ad_account_ids)
+      logger.info(f"AD_ACCOUNT_ID: {ad_account_ids}")
+      try:
+        ad_account_ids = json.loads(ad_account_ids)
+      except json.JSONDecodeError:
+        logger.error(f"Failed to parse AD_ACCOUNT_ID: {ad_account_ids}")
+        raise ValueError("Invalid JSON format for AD_ACCOUNT_ID")
   else:
       raise ValueError("No ad account IDs found in environment variable")
 
