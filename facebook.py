@@ -3,7 +3,10 @@ from facebook_business.api import FacebookAdsApi
 from facebook_business.adobjects.adaccount import AdAccount
 from facebook_business.adobjects.ad import Ad
 from dotenv import load_dotenv
-import pandas as pd
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -12,6 +15,12 @@ ACCESS_TOKEN = os.getenv('FB_ACCESS_TOKEN')
 AD_ACCOUNT_ID = os.getenv('FB_AD_ACCOUNT_ID')
 APP_ID = os.getenv('FB_APP_ID')
 APP_SECRET = os.getenv('FB_APP_SECRET')
+
+# Log the tail of each variable
+logger.info(f"ACCESS_TOKEN tail: {ACCESS_TOKEN[-4:] if ACCESS_TOKEN else 'None'}")
+logger.info(f"AD_ACCOUNT_ID tail: {AD_ACCOUNT_ID[-4:] if AD_ACCOUNT_ID else 'None'}")
+logger.info(f"APP_ID tail: {APP_ID[-4:] if APP_ID else 'None'}")
+logger.info(f"APP_SECRET tail: {APP_SECRET[-4:] if APP_SECRET else 'None'}")
 
 FacebookAdsApi.init(APP_ID, APP_SECRET, ACCESS_TOKEN)
 
@@ -25,25 +34,30 @@ FacebookAdsApi.init(APP_ID, APP_SECRET, ACCESS_TOKEN)
 #       print(f"  ID: {campaign['id']} | Name: {campaign['name']}")
 
 
-def get_all_ad_ids():
+def get_all_ad_ids():   
   """Extract all ad IDs from all campaigns and return as a list."""
-  account = AdAccount(AD_ACCOUNT_ID)
-  campaigns = account.get_campaigns(fields=['id', 'name'])
-  
+
+  ad_account_ids = os.getenv('FB_AD_ACCOUNT_ID')
+  if ad_account_ids:
+      ad_account_ids = json.loads(ad_account_ids)
+  else:
+      raise ValueError("No ad account IDs found in environment variable")
+
   all_ad_ids = []
-  
-  print("Extracting ad IDs from campaigns...")
-  for campaign in campaigns:
-      print(f"Processing campaign: {campaign['name']} (ID: {campaign['id']})")
-      
-      # Get ads for this campaign
-      ads = campaign.get_ads(fields=['id', 'name'])
-      
-      for ad in ads:
-          all_ad_ids.append(ad['id'])
-          print(f"  Found ad: {ad['name']} (ID: {ad['id']})")
-  
-  print(f"\nTotal ads found: {len(all_ad_ids)}")
+
+  for ad_account_id in ad_account_ids:
+    account = AdAccount(ad_account_id)
+                # Get all ads directly from the account
+    ads = account.get_ads(
+        fields=['id', 'name'],
+        params={'limit': 1000}  # Get more ads per request
+    )
+    
+    for ad in ads:
+        all_ad_ids.append(ad['id'])
+        logger.info(f"Found ad: {ad['name']} (ID: {ad['id']})")
+
+  logger.info(f"\nTotal ads found: {len(all_ad_ids)}")
   return all_ad_ids
 
 

@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 import os
 from typing import List, Dict, Any
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -26,11 +29,17 @@ async def sync_ads_insights() -> Dict[str, Any]:
     """
     try:
         # 1. Get Facebook Ads data
+        logger.info("Fetching all Facebook ad IDs")
         ad_ids = get_all_ad_ids()
+        logger.info(f"Retrieved {len(ad_ids)} ad IDs")
+
+        logger.info("Fetching insights for all ad IDs")
         raw_insights = get_ads_insights(ad_ids)
         insights_list = [x for x in raw_insights]
+        logger.info(f"Retrieved insights for {len(insights_list)} ads")
 
         # 2. Validate and prepare records
+        logger.info("Validating and preparing insights for BigQuery")
         valid_insights = []
         for insight in insights_list:
             if validate_insight(insight):

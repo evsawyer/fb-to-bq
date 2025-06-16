@@ -118,14 +118,34 @@ def get_table_schema(dataset_id, table_id):
 def process_records(dataset_id, table_id, new_records, batch_size=1000):
     """Process records in batches, handling updates and inserts"""
     
+    logger.info("Fetching updatable fields from the table schema")
     updatable_fields = get_table_schema(dataset_id, table_id)
+    logger.info(f"Updatable fields: {updatable_fields}")
+
+    logger.info("Constructing update clause for SQL merge operation")
     update_clause = ",\n        ".join(f"{field} = S.{field}" for field in updatable_fields)
+    logger.debug(f"Update clause: {update_clause}")
+
+    logger.info("Extracting unique date_starts, date_stops, and ad_ids from new records")
     date_starts = list(set(r['date_start'] for r in new_records))
     date_stops = list(set(r['date_stop'] for r in new_records))
     ad_ids = list(set(r['ad_id'] for r in new_records))
+    logger.debug(f"Unique date_starts: {date_starts}")
+    logger.debug(f"Unique date_stops: {date_stops}")
+    logger.debug(f"Unique ad_ids: {ad_ids}")
+
+    logger.info("Retrieving existing records from BigQuery")
     existing_records = get_existing_records(dataset_id, table_id, date_starts, date_stops, ad_ids)
+    logger.info(f"Number of existing records retrieved: {len(existing_records)}")
+
+    logger.info("Separating new records into updates and inserts")
     updates, inserts = separate_records(new_records, existing_records)
+    logger.info(f"Number of records to update: {len(updates)}")
+    logger.info(f"Number of records to insert: {len(inserts)}")
+
+    logger.info("Fetching project ID from BigQuery client")
     project_id = client.project  # Get the project ID from the client
+    logger.debug(f"Project ID: {project_id}")
     logger.info(f"Project ID: {project_id}")
     logger.info(f"Total records to process: {len(new_records)}")
     logger.info(f"Records to update: {len(updates)}, Records to insert: {len(inserts)}")
