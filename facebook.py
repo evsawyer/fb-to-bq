@@ -37,7 +37,7 @@ FacebookAdsApi.init(APP_ID, APP_SECRET, ACCESS_TOKEN)
 def get_all_ad_ids():   
   """Extract all ad IDs from all campaigns and return as a list."""
 
-  ad_account_ids = os.getenv('FB_AD_ACCOUNT_ID')
+  ad_account_ids = AD_ACCOUNT_ID
   if ad_account_ids:
       logger.info(f"AD_ACCOUNT_ID: {ad_account_ids}")
       try:
