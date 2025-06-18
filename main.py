@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from bigquery import get_existing_records, separate_records, get_table_schema, process_records
-from facebook import get_ads_insights, get_all_ad_ids
+from facebook import get_ads_insights_with_delay, get_all_ad_ids, get_ads_insights
 from validate import analyze_insights_structure, validate_insight, prepare_for_bigquery
+from kpi_event_mapping_table import update_mapping_table_with_facebook_data
+from rollup import execute_ads_rollup_query
 from dotenv import load_dotenv
 import os
 from typing import List, Dict, Any
@@ -41,7 +43,7 @@ async def sync_ads_insights() -> Dict[str, Any]:
         logger.info(f"Retrieved {len(ad_ids)} ad IDs")
 
         logger.info("Fetching insights for all ad IDs")
-        raw_insights = get_ads_insights(ad_ids)
+        raw_insights = get_ads_insights_with_delay(ad_ids)
         insights_list = [x for x in raw_insights]
         logger.info(f"Retrieved insights for {len(insights_list)} ads")
 
@@ -75,6 +77,7 @@ async def sync_ads_insights() -> Dict[str, Any]:
         # updates, inserts = separate_records(valid_insights, existing)
 
         # 6. Process records
+        logger.info("Starting to process records for BigQuery")
         await asyncio.to_thread(
             process_records,
             dataset_id=dataset_id,
@@ -82,6 +85,21 @@ async def sync_ads_insights() -> Dict[str, Any]:
             new_records=valid_insights,
             batch_size=1000
         )
+        logger.info("Finished processing records for BigQuery")
+        
+        logger.info("Waiting for 1 minute before updating mapping table")
+        await asyncio.sleep(60)
+
+        logger.info("Starting to update mapping table with Facebook data")
+        await asyncio.to_thread(update_mapping_table_with_facebook_data)
+        logger.info("Finished updating mapping table with Facebook data")
+        
+        logger.info("Waiting for 1 minute before executing rollup query")
+        await asyncio.sleep(60)
+
+        logger.info("Starting to execute ads rollup query")
+        await asyncio.to_thread(execute_ads_rollup_query)
+        logger.info("Finished executing ads rollup query")
 
         return {
             "status": "success",

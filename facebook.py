@@ -5,6 +5,9 @@ from facebook_business.adobjects.ad import Ad
 from dotenv import load_dotenv
 import json
 import logging
+import time
+from facebook_business.adobjects.ad import Ad
+from facebook_business.exceptions import FacebookRequestError
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +133,126 @@ def get_ads_insights(ad_ids: list[str]) -> list[dict]:
             continue
 
     print(f"\nFetched insights for {len(all_insights)} entries across {len(ad_ids)} ads")
+
+    return all_insights
+
+def get_ads_insights_with_delay(ad_ids: list[str], delay_seconds: float = 0.75) -> list[dict]:
+    """Fetch insights for multiple ads with hardcoded delay between requests.
+    
+    Args:
+        ad_ids: List of Facebook ad IDs to fetch insights for
+        delay_seconds: Delay between each request (default 0.75 seconds)
+        
+    Returns:
+        list[dict]: List of insights data for all ads
+    """
+    # Comprehensive list of available fields
+    fields = [
+        # Metadata
+        'account_id', 'account_name', 'account_currency',
+        'ad_id', 'ad_name', 'adset_id', 'adset_name', 
+        'campaign_id', 'campaign_name',
+        'date_start', 'date_stop',
+
+        # Basic performance
+        'impressions', 'reach', 'frequency',
+        'spend', 'clicks', 'cpc', 'cpm', 'cpp', 'ctr',
+        'unique_clicks', 'unique_ctr', 'cost_per_unique_click',
+
+        # Website interactions
+        'inline_link_clicks', 'inline_link_click_ctr', 'website_ctr',
+
+        # Action metrics
+        'actions', 'action_values',
+        'unique_actions',
+        'cost_per_action_type', 'cost_per_unique_action_type',
+
+        # ROAS
+        'purchase_roas',
+
+        # Video engagement
+        'video_play_actions', 'video_avg_time_watched_actions',
+        'video_p25_watched_actions', 'video_p50_watched_actions',
+        'video_p75_watched_actions', 'video_p100_watched_actions',
+
+        # Ad quality diagnostics
+        'quality_ranking', 'engagement_rate_ranking', 'conversion_rate_ranking',
+
+        # Objectives
+        'objective', 'optimization_goal'
+    ]
+
+    params = {
+        'date_preset': 'last_30d',
+        'level': 'ad',
+        'time_increment': 1
+    }
+
+    all_insights = []
+    failed_ads = []
+    
+    total_ads = len(ad_ids)
+    estimated_time = total_ads * delay_seconds / 60  # in minutes
+    
+    print(f"Processing {total_ads} ads with {delay_seconds}s delay between requests")
+    print(f"Estimated completion time: {estimated_time:.1f} minutes")
+    print("=" * 50)
+    
+    start_time = time.time()
+    
+    for i, ad_id in enumerate(ad_ids, 1):
+        try:
+            ad = Ad(ad_id)
+            insights = ad.get_insights(fields=fields, params=params)
+            
+            # Convert to list and add to results
+            insights_list = list(insights)
+            all_insights.extend(insights_list)
+            
+            # Progress logging every 100 ads
+            if i % 100 == 0 or i == total_ads:
+                elapsed_time = (time.time() - start_time) / 60
+                remaining_ads = total_ads - i
+                estimated_remaining = (remaining_ads * delay_seconds) / 60
+                
+                print(f"Progress: {i}/{total_ads} ads ({i/total_ads*100:.1f}%) | "
+                      f"Elapsed: {elapsed_time:.1f}min | "
+                      f"Est. remaining: {estimated_remaining:.1f}min | "
+                      f"Success rate: {(i-len(failed_ads))/i*100:.1f}%")
+            
+            # Only delay if not the last request
+            if i < total_ads:
+                time.sleep(delay_seconds)
+        
+        except FacebookRequestError as e:
+            print(f"Facebook API error for ad {ad_id} (#{i}): {e}")
+            failed_ads.append(ad_id)
+            
+            # Still delay even on errors to avoid hammering the API
+            if i < total_ads:
+                time.sleep(delay_seconds)
+        
+        except Exception as e:
+            print(f"Unexpected error for ad {ad_id} (#{i}): {str(e)}")
+            failed_ads.append(ad_id)
+            
+            # Still delay even on errors
+            if i < total_ads:
+                time.sleep(delay_seconds)
+
+    # Final summary
+    total_time = (time.time() - start_time) / 60
+    success_count = len(ad_ids) - len(failed_ads)
+    
+    print("=" * 50)
+    print(f"COMPLETED!")
+    print(f"Total time: {total_time:.1f} minutes")
+    print(f"Successfully processed: {success_count}/{total_ads} ads ({success_count/total_ads*100:.1f}%)")
+    print(f"Failed ads: {len(failed_ads)}")
+    print(f"Total insights entries: {len(all_insights)}")
+    
+    if failed_ads:
+        print(f"First 10 failed ad IDs: {failed_ads[:10]}")
 
     return all_insights
 
