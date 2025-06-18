@@ -15,6 +15,8 @@ COPY bigquery.py .
 COPY facebook.py .
 COPY validate.py .
 COPY schema.py .
+COPY kpi_event_mapping_table.py .
+COPY rollup.py .
 
 # Set the PORT environment variable to 8080
 ENV PORT=8080
