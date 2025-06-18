@@ -121,6 +121,7 @@ def get_ads_insights(ad_ids: list[str]) -> list[dict]:
     }
 
     all_insights = []
+    
     for ad_id in ad_ids:
         try:
             ad = Ad(ad_id)
@@ -190,7 +191,6 @@ def get_ads_insights_with_delay(ad_ids: list[str], delay_seconds: float = 0.75) 
 
     all_insights = []
     failed_ads = []
-    
     total_ads = len(ad_ids)
     estimated_time = total_ads * delay_seconds / 60  # in minutes
     

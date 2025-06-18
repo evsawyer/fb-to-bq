@@ -3,7 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 from typing import List, Dict
-from main import get_bigquery_client
+from bigquery import get_bigquery_client
 import pandas_gbq
 import json
 load_dotenv()

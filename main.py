@@ -87,15 +87,15 @@ async def sync_ads_insights() -> Dict[str, Any]:
         )
         logger.info("Finished processing records for BigQuery")
         
-        logger.info("Waiting for 1 minute before updating mapping table")
-        await asyncio.sleep(60)
+        # logger.info("Waiting for 1 minute before updating mapping table")
+        # await asyncio.sleep(60)
 
         logger.info("Starting to update mapping table with Facebook data")
         await asyncio.to_thread(update_mapping_table_with_facebook_data)
         logger.info("Finished updating mapping table with Facebook data")
         
-        logger.info("Waiting for 1 minute before executing rollup query")
-        await asyncio.sleep(60)
+        # logger.info("Waiting for 1 minute before executing rollup query")
+        # await asyncio.sleep(60)
 
         logger.info("Starting to execute ads rollup query")
         await asyncio.to_thread(execute_ads_rollup_query)
