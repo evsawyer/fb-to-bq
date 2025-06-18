@@ -25,6 +25,13 @@ app = FastAPI(
     title="Facebook Ads to BigQuery Sync",
     description="API to sync Facebook Ads insights data to BigQuery"
 )
+@app.get("/health")
+async def health_check() -> Dict[str, str]:
+    """
+    Health check endpoint to verify the service is running.
+    Returns a simple status message.
+    """
+    return {"status": "healthy"}
 
 @app.post("/sync-ads-insights")
 async def sync_ads_insights() -> Dict[str, Any]:
