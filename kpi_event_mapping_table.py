@@ -53,10 +53,16 @@ def get_standard_mappings() -> List[Dict]:
         {'user_friendly_name': 'Purchase', 'meta_action_type': 'purchase', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         {'user_friendly_name': 'Page View', 'meta_action_type': 'page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         {'user_friendly_name': 'Link Click', 'meta_action_type': 'link_click', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        
+        {'user_friendly_name': 'Page Engagement', 'meta_action_type': 'page_engagement', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        {'user_friendly_name': 'Post Engagement', 'meta_action_type': 'post_engagement', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        {'user_friendly_name': 'Landing Page View', 'meta_action_type': 'landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        {'user_friendly_name': 'Post Reaction', 'meta_action_type': 'post_reaction', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        {'user_friendly_name': 'Post Save', 'meta_action_type': 'post_save', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        {'user_friendly_name': 'Web Lead', 'meta_action_type': 'web_lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        {'user_friendly_name': 'Omni Landing Page View', 'meta_action_type': 'omni_landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         # Pixel event mappings  
-        {'user_friendly_name': 'Lead', 'meta_action_type': 'offsite_conversion.fb_pixel_lead', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Purchase', 'meta_action_type': 'offsite_conversion.fb_pixel_purchase', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Lead', 'meta_action_type': 'offsite_conversion.fb_pixel_lead', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Purchase', 'meta_action_type': 'offsite_conversion.fb_pixel_purchase', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
     ]
 
 def update_mapping_table_with_facebook_data():

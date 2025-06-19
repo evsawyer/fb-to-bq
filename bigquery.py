@@ -13,6 +13,10 @@ logging.basicConfig(
 logger = logging.getLogger('bigquery')
 
 def get_bigquery_client():
+    SCOPES = [
+       'https://www.googleapis.com/auth/bigquery',
+       'https://www.googleapis.com/auth/drive.readonly'
+    ]
     """Initialize BigQuery client with credentials from either file or environment variable."""
     try:
         # First try to get credentials from environment variable (production)
@@ -21,13 +25,13 @@ def get_bigquery_client():
         if credentials_json:
             # Production: Use credentials from environment variable
             credentials_info = json.loads(credentials_json)
-            credentials = service_account.Credentials.from_service_account_info(credentials_info)
+            credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=SCOPES)
         else:
             # Local: Try to use credentials file
             credentials_path = "credentials.json"
             if not os.path.exists(credentials_path):
                 raise ValueError("No credentials found in environment variable or local file")
-            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+            credentials = service_account.Credentials.from_service_account_file(credentials_path, scopes=SCOPES)
         
         return bigquery.Client(
             project=credentials.project_id,

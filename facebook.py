@@ -256,3 +256,230 @@ def get_ads_insights_with_delay(ad_ids: list[str], delay_seconds: float = 0.75) 
 
     return all_insights
 
+
+def get_all_ads_insights_bulk(ad_account_ids: list[str]) -> list[dict]:
+    """Fetch insights for ALL ads in account(s) with minimal API calls.
+    
+    Args:
+        ad_account_ids: List of Facebook ad account IDs
+        
+    Returns:
+        list[dict]: List of insights data for all ads across all accounts
+    """
+    # Comprehensive list of available fields
+    fields = [
+        # Metadata
+        'account_id', 'account_name', 'account_currency',
+        'ad_id', 'ad_name', 'adset_id', 'adset_name', 
+        'campaign_id', 'campaign_name',
+        'date_start', 'date_stop',
+
+        # Basic performance
+        'impressions', 'reach', 'frequency',
+        'spend', 'clicks', 'cpc', 'cpm', 'cpp', 'ctr',
+        'unique_clicks', 'unique_ctr', 'cost_per_unique_click',
+
+        # Website interactions
+        'inline_link_clicks', 'inline_link_click_ctr', 'website_ctr',
+
+        # Action metrics
+        'actions', 'action_values',
+        'unique_actions',
+        'cost_per_action_type', 'cost_per_unique_action_type',
+
+        # ROAS
+        'purchase_roas',
+
+        # Video engagement
+        'video_play_actions', 'video_avg_time_watched_actions',
+        'video_p25_watched_actions', 'video_p50_watched_actions',
+        'video_p75_watched_actions', 'video_p100_watched_actions',
+
+        # Ad quality diagnostics
+        'quality_ranking', 'engagement_rate_ranking', 'conversion_rate_ranking',
+
+        # Objectives
+        'objective', 'optimization_goal'
+    ]
+
+    params = {
+        'date_preset': 'last_30d',
+        'level': 'ad',  # This gets insights broken down by individual ads
+        'time_increment': 1,
+        'limit': 1000,  # Maximum results per page
+    }
+
+    all_insights = []
+    failed_accounts = []
+    
+    print(f"Processing {len(ad_account_ids)} ad account(s) for bulk insights")
+    print("=" * 60)
+    
+    start_time = time.time()
+    
+    for i, ad_account_id in enumerate(ad_account_ids, 1):
+        try:
+            print(f"Processing account {i}/{len(ad_account_ids)}: {ad_account_id}")
+            
+            account = AdAccount(ad_account_id)
+            
+            # Get insights for ALL ads in this account with pagination
+            insights_cursor = account.get_insights(fields=fields, params=params)
+            
+            account_insights = []
+            page_count = 0
+            
+            # Handle pagination correctly - iterate through pages, not individual insights
+            try:
+                for insights_batch in insights_cursor:
+                    # insights_batch is a list of insight objects
+                    for insight in insights_batch:
+                        # Convert insight object to dictionary
+                        insight_dict = dict(insight)
+                        account_insights.append(insight_dict)
+                    
+                    page_count += 1
+                    if page_count % 10 == 0:  # Less frequent updates
+                        print(f"  📄 Page {page_count}: {len(account_insights)} insights processed...")
+                        
+            except StopIteration:
+                # End of pagination
+                pass
+            
+            all_insights.extend(account_insights)
+            
+            elapsed_time = (time.time() - start_time) / 60
+            print(f"  ✅ Account {ad_account_id}: {len(account_insights)} insights")
+            print(f"  📊 Total insights so far: {len(all_insights)}")
+            print(f"  ⏱️  Elapsed time: {elapsed_time:.1f} minutes")
+            print()
+            
+            # Small delay between accounts to be respectful
+            if i < len(ad_account_ids):
+                time.sleep(1)
+        
+        except FacebookRequestError as e:
+            # Properly extract error codes
+            try:
+                error_code = e.api_error_code() if hasattr(e, 'api_error_code') else None
+                error_subcode = e.api_error_subcode() if hasattr(e, 'api_error_subcode') else None
+            except:
+                error_code = None
+                error_subcode = None
+            
+            print(f"❌ Facebook API error for account {ad_account_id}:")
+            print(f"   Code: {error_code}, Subcode: {error_subcode}")
+            print(f"   Message: {str(e)[:200]}...")  # Truncate long error messages
+            
+            # Handle specific error types
+            if error_code == 1 and error_subcode == 99:
+                print("   ℹ️  This is likely a temporary server error or account access issue")
+            elif error_code == 17:
+                print("   ⚠️  Rate limit exceeded - consider adding delays")
+            elif error_code == 190:
+                print("   🔑 Access token issue - check permissions")
+            
+            failed_accounts.append({
+                'account_id': ad_account_id,
+                'error_code': error_code,
+                'error_subcode': error_subcode,
+                'error_message': str(e)[:500]  # Limit error message length
+            })
+        
+        except Exception as e:
+            print(f"❌ Unexpected error for account {ad_account_id}: {str(e)[:200]}...")
+            failed_accounts.append({
+                'account_id': ad_account_id,
+                'error_code': 'unknown',
+                'error_message': str(e)[:500]  # Limit error message length
+            })
+
+    # Final summary
+    total_time = (time.time() - start_time) / 60
+    success_count = len(ad_account_ids) - len(failed_accounts)
+    
+    print("=" * 60)
+    print(f"🎉 COMPLETED!")
+    print(f"⏱️  Total time: {total_time:.1f} minutes")
+    print(f"✅ Successfully processed: {success_count}/{len(ad_account_ids)} accounts")
+    print(f"❌ Failed accounts: {len(failed_accounts)}")
+    print(f"📊 Total insights entries: {len(all_insights)}")
+    
+    if failed_accounts:
+        print("Failed accounts details:")
+        for failed in failed_accounts:
+            if isinstance(failed, dict):
+                print(f"  {failed['account_id']}: {failed.get('error_code', 'unknown')} - {failed.get('error_message', 'No message')}")
+            else:
+                print(f"  {failed}: Legacy error format")
+
+    return all_insights
+
+
+def get_all_ads_insights_bulk_simple(ad_account_ids: list[str]) -> list[dict]:
+    """Simple version - let Facebook SDK handle pagination automatically."""
+    
+    # Comprehensive list of available fields
+    fields = [
+        # Metadata
+        'account_id', 'account_name', 'account_currency',
+        'ad_id', 'ad_name', 'adset_id', 'adset_name', 
+        'campaign_id', 'campaign_name',
+        'date_start', 'date_stop',
+
+        # Basic performance
+        'impressions', 'reach', 'frequency',
+        'spend', 'clicks', 'cpc', 'cpm', 'cpp', 'ctr',
+        'unique_clicks', 'unique_ctr', 'cost_per_unique_click',
+
+        # Website interactions
+        'inline_link_clicks', 'inline_link_click_ctr', 'website_ctr',
+
+        # Action metrics
+        'actions', 'action_values',
+        'unique_actions',
+        'cost_per_action_type', 'cost_per_unique_action_type',
+
+        # ROAS
+        'purchase_roas',
+
+        # Video engagement
+        'video_play_actions', 'video_avg_time_watched_actions',
+        'video_p25_watched_actions', 'video_p50_watched_actions',
+        'video_p75_watched_actions', 'video_p100_watched_actions',
+
+        # Ad quality diagnostics
+        'quality_ranking', 'engagement_rate_ranking', 'conversion_rate_ranking',
+
+        # Objectives
+        'objective', 'optimization_goal'
+    ]
+
+    params = {
+        'date_preset': 'last_30d',
+        'level': 'ad',  # This gets insights broken down by individual ads
+        'time_increment': 1,
+        'limit': 1000,  # Maximum results per page
+    }
+    
+    all_insights = []
+    
+    for ad_account_id in ad_account_ids:
+        print(f"Processing {ad_account_id}...")
+        
+        try:
+            account = AdAccount(ad_account_id)
+            insights = account.get_insights(fields=fields, params=params)
+            
+            # Just convert to list - SDK handles all pagination behind the scenes
+            account_insights = [dict(insight) for insight in insights]
+            all_insights.extend(account_insights)
+            
+            print(f"  ✅ Got {len(account_insights)} insights")
+            
+        except Exception as e:
+            print(f"  ❌ Error: {e}")
+            continue
+    
+    print(f"🎉 Total: {len(all_insights)} insights")
+    return all_insights

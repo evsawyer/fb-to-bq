@@ -61,8 +61,16 @@ def execute_ads_rollup_query():
         SELECT 
         bd.*,
         
-        -- Get KPI events to map (prioritize custom_code over event)
-        COALESCE(bd.kpi_custom_code, bd.kpi_event) as kpi_string,
+        -- Combine kpi_event and kpi_custom_code (kpi_event first)
+        CASE 
+            WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+            THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+            WHEN bd.kpi_event IS NOT NULL 
+            THEN bd.kpi_event
+            WHEN bd.kpi_custom_code IS NOT NULL 
+            THEN bd.kpi_custom_code
+            ELSE NULL
+        END as kpi_string,
         
         -- Split and map target_action_0
         COALESCE(
@@ -80,35 +88,105 @@ def execute_ads_rollup_query():
         COALESCE(
             map2_account.meta_action_type,
             map2_standard.meta_action_type
-        ) as target_action_2
+        ) as target_action_2,
+        
+        -- Capture user-friendly names for each action
+        COALESCE(
+            map0_account.user_friendly_name,
+            map0_standard.user_friendly_name
+        ) as user_friendly_action_0,
+        
+        COALESCE(
+            map1_account.user_friendly_name,
+            map1_standard.user_friendly_name
+        ) as user_friendly_action_1,
+        
+        COALESCE(
+            map2_account.user_friendly_name,
+            map2_standard.user_friendly_name
+        ) as user_friendly_action_2
         
         FROM base_data bd
         
-        -- Map action 0
+        -- Map action 0 (using the combined kpi_string)
         LEFT JOIN `raw_ads.kpi_event_mapping` map0_account
-        ON map0_account.user_friendly_name = TRIM(SPLIT(COALESCE(bd.kpi_custom_code, bd.kpi_event), ',')[SAFE_OFFSET(0)])
+        ON map0_account.user_friendly_name = TRIM(SPLIT(
+            CASE 
+                WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+                THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+                WHEN bd.kpi_event IS NOT NULL 
+                THEN bd.kpi_event
+                WHEN bd.kpi_custom_code IS NOT NULL 
+                THEN bd.kpi_custom_code
+                ELSE NULL
+            END, ',')[SAFE_OFFSET(0)])
         AND map0_account.ad_account_id = bd.account_id
         
         LEFT JOIN `raw_ads.kpi_event_mapping` map0_standard  
-        ON map0_standard.user_friendly_name = TRIM(SPLIT(COALESCE(bd.kpi_custom_code, bd.kpi_event), ',')[SAFE_OFFSET(0)])
+        ON map0_standard.user_friendly_name = TRIM(SPLIT(
+            CASE 
+                WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+                THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+                WHEN bd.kpi_event IS NOT NULL 
+                THEN bd.kpi_event
+                WHEN bd.kpi_custom_code IS NOT NULL 
+                THEN bd.kpi_custom_code
+                ELSE NULL
+            END, ',')[SAFE_OFFSET(0)])
         AND map0_standard.ad_account_id = 'all'
         
         -- Map action 1
         LEFT JOIN `raw_ads.kpi_event_mapping` map1_account
-        ON map1_account.user_friendly_name = TRIM(SPLIT(COALESCE(bd.kpi_custom_code, bd.kpi_event), ',')[SAFE_OFFSET(1)])
+        ON map1_account.user_friendly_name = TRIM(SPLIT(
+            CASE 
+                WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+                THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+                WHEN bd.kpi_event IS NOT NULL 
+                THEN bd.kpi_event
+                WHEN bd.kpi_custom_code IS NOT NULL 
+                THEN bd.kpi_custom_code
+                ELSE NULL
+            END, ',')[SAFE_OFFSET(1)])
         AND map1_account.ad_account_id = bd.account_id
         
         LEFT JOIN `raw_ads.kpi_event_mapping` map1_standard
-        ON map1_standard.user_friendly_name = TRIM(SPLIT(COALESCE(bd.kpi_custom_code, bd.kpi_event), ',')[SAFE_OFFSET(1)])
+        ON map1_standard.user_friendly_name = TRIM(SPLIT(
+            CASE 
+                WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+                THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+                WHEN bd.kpi_event IS NOT NULL 
+                THEN bd.kpi_event
+                WHEN bd.kpi_custom_code IS NOT NULL 
+                THEN bd.kpi_custom_code
+                ELSE NULL
+            END, ',')[SAFE_OFFSET(1)])
         AND map1_standard.ad_account_id = 'all'
         
         -- Map action 2
         LEFT JOIN `raw_ads.kpi_event_mapping` map2_account
-        ON map2_account.user_friendly_name = TRIM(SPLIT(COALESCE(bd.kpi_custom_code, bd.kpi_event), ',')[SAFE_OFFSET(2)])
+        ON map2_account.user_friendly_name = TRIM(SPLIT(
+            CASE 
+                WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+                THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+                WHEN bd.kpi_event IS NOT NULL 
+                THEN bd.kpi_event
+                WHEN bd.kpi_custom_code IS NOT NULL 
+                THEN bd.kpi_custom_code
+                ELSE NULL
+            END, ',')[SAFE_OFFSET(2)])
         AND map2_account.ad_account_id = bd.account_id
         
         LEFT JOIN `raw_ads.kpi_event_mapping` map2_standard
-        ON map2_standard.user_friendly_name = TRIM(SPLIT(COALESCE(bd.kpi_custom_code, bd.kpi_event), ',')[SAFE_OFFSET(2)])
+        ON map2_standard.user_friendly_name = TRIM(SPLIT(
+            CASE 
+                WHEN bd.kpi_event IS NOT NULL AND bd.kpi_custom_code IS NOT NULL 
+                THEN CONCAT(bd.kpi_event, ',', bd.kpi_custom_code)
+                WHEN bd.kpi_event IS NOT NULL 
+                THEN bd.kpi_event
+                WHEN bd.kpi_custom_code IS NOT NULL 
+                THEN bd.kpi_custom_code
+                ELSE NULL
+            END, ',')[SAFE_OFFSET(2)])
         AND map2_standard.ad_account_id = 'all'
     ),
 
@@ -144,10 +222,15 @@ def execute_ads_rollup_query():
         inline_link_clicks,
         inline_link_click_ctr,
         
-        -- Store the mapped action types
+        -- Store the mapped action types (technical names for value extraction)
         target_action_0 as action_type_0,
         target_action_1 as action_type_1,
         target_action_2 as action_type_2,
+        
+        -- Store the user-friendly names
+        user_friendly_action_0 as user_friendly_action_type_0,
+        user_friendly_action_1 as user_friendly_action_type_1,
+        user_friendly_action_2 as user_friendly_action_type_2,
         
         -- Extract action values from RECORD array
         (
@@ -255,6 +338,9 @@ def execute_ads_rollup_query():
         action_type_0 = source.action_type_0,
         action_type_1 = source.action_type_1,
         action_type_2 = source.action_type_2,
+        user_friendly_action_type_0 = source.user_friendly_action_type_0,
+        user_friendly_action_type_1 = source.user_friendly_action_type_1,
+        user_friendly_action_type_2 = source.user_friendly_action_type_2,
         actions_value_0 = source.actions_value_0,
         actions_value_1 = source.actions_value_1,
         actions_value_2 = source.actions_value_2,
@@ -274,6 +360,7 @@ def execute_ads_rollup_query():
         campaign_name, impressions, reach, frequency, spend, clicks, cpc, cpm, cpp, ctr,
         unique_clicks, unique_ctr, cost_per_unique_click, inline_link_clicks, 
         inline_link_click_ctr, action_type_0, action_type_1, action_type_2,
+        user_friendly_action_type_0, user_friendly_action_type_1, user_friendly_action_type_2,
         actions_value_0, actions_value_1, actions_value_2, 
         cost_per_action_type_value_0, cost_per_action_type_value_1, cost_per_action_type_value_2,
         quality_ranking, engagement_rate_ranking, conversion_rate_ranking, objective, optimization_goal, merge_key
@@ -287,6 +374,7 @@ def execute_ads_rollup_query():
         source.cpm, source.cpp, source.ctr, source.unique_clicks, source.unique_ctr, 
         source.cost_per_unique_click, source.inline_link_clicks, source.inline_link_click_ctr, 
         source.action_type_0, source.action_type_1, source.action_type_2,
+        source.user_friendly_action_type_0, source.user_friendly_action_type_1, source.user_friendly_action_type_2,
         source.actions_value_0, source.actions_value_1, source.actions_value_2, 
         source.cost_per_action_type_value_0, source.cost_per_action_type_value_1, source.cost_per_action_type_value_2,
         source.quality_ranking, source.engagement_rate_ranking, source.conversion_rate_ranking, 
