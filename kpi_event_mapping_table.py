@@ -59,7 +59,7 @@ def get_standard_mappings() -> List[Dict]:
         {'user_friendly_name': 'Post Reaction', 'meta_action_type': 'post_reaction', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         {'user_friendly_name': 'Post Save', 'meta_action_type': 'post_save', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         {'user_friendly_name': 'Web Lead', 'meta_action_type': 'web_lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Omni Landing Page View', 'meta_action_type': 'omni_landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Omni Landing Page View', 'meta_action_type': 'omni_landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         # Pixel event mappings  
         # {'user_friendly_name': 'Lead', 'meta_action_type': 'offsite_conversion.fb_pixel_lead', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
         # {'user_friendly_name': 'Purchase', 'meta_action_type': 'offsite_conversion.fb_pixel_purchase', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
