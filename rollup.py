@@ -34,9 +34,14 @@ base_data AS (
     kr.reporting_group,
     kr.platform,
     kr.kpi_rules,
+    kr.ad_set_contains,  -- Add ad_set_contains for validation
     
     -- Meta ads fields
     ma.actions,
+    ma.video_play_actions,
+    ma.video_p50_watched_actions, 
+    ma.video_p100_watched_actions,
+    ma.video_thruplay_watched_actions,
     ma.date_start,
     ma.date_stop,
     ma.ad_name,
@@ -151,6 +156,13 @@ final_rollup AS (
     bd.conversion_rate_ranking,
     bd.objective,
     bd.optimization_goal,
+    
+    -- Add validation columns
+    bd.actions,                     -- Full actions array for validation
+    bd.video_play_actions,          -- Video play actions for validation
+    bd.video_p50_watched_actions,   -- Video 50% watched actions for validation
+    bd.video_p100_watched_actions,  -- Video 100% watched actions for validation
+    bd.ad_set_contains,             -- Matching criteria for validation
     
     -- Extract Lead value with custom override
     COALESCE(
@@ -328,6 +340,35 @@ final_rollup AS (
         )
     ) as Web_Lead,
     
+    -- Extract video metrics directly from base_data (sourced from meta_ads)
+    (
+        SELECT action.value 
+        FROM UNNEST(bd.video_play_actions) as action 
+        WHERE action.action_type = 'video_view'
+        LIMIT 1
+    ) as Video_View_Start,
+    
+    (
+        SELECT action.value 
+        FROM UNNEST(bd.video_p50_watched_actions) as action 
+        WHERE action.action_type = 'video_view'
+        LIMIT 1
+    ) as Video_View_Mid,
+    
+    (
+        SELECT action.value 
+        FROM UNNEST(bd.video_p100_watched_actions) as action 
+        WHERE action.action_type = 'video_view'
+        LIMIT 1
+    ) as Video_View_Complete,
+    
+    (
+        SELECT action.value 
+        FROM UNNEST(bd.video_thruplay_watched_actions) as action 
+        WHERE action.action_type = 'video_view'
+        LIMIT 1
+    ) as Video_View_Platform,
+    
     -- Create unique key for merging
     CONCAT(
         COALESCE(bd.client_id, ''), '_',
@@ -385,6 +426,11 @@ UPDATE SET
     cost_per_unique_click = source.cost_per_unique_click,
     inline_link_clicks = source.inline_link_clicks,
     inline_link_click_ctr = source.inline_link_click_ctr,
+    actions = source.actions,
+    video_play_actions = source.video_play_actions,
+    video_p50_watched_actions = source.video_p50_watched_actions,
+    video_p100_watched_actions = source.video_p100_watched_actions,
+    ad_set_contains = source.ad_set_contains,
     Lead = source.Lead,
     Video_View = source.Video_View,
     Purchase = source.Purchase,
@@ -396,6 +442,10 @@ UPDATE SET
     Post_Reaction = source.Post_Reaction,
     Post_Save = source.Post_Save,
     Web_Lead = source.Web_Lead,
+    Video_View_Start = source.Video_View_Start,
+    Video_View_Mid = source.Video_View_Mid,
+    Video_View_Complete = source.Video_View_Complete,
+    Video_View_Platform = source.Video_View_Platform,
     quality_ranking = source.quality_ranking,
     engagement_rate_ranking = source.engagement_rate_ranking,
     conversion_rate_ranking = source.conversion_rate_ranking,
@@ -408,9 +458,11 @@ INSERT (
     ad_name, account_id, account_name, account_currency, ad_id, adset_id, adset_name,
     campaign_name, impressions, reach, frequency, spend, clicks, cpc, cpm, cpp, ctr,
     unique_clicks, unique_ctr, cost_per_unique_click, inline_link_clicks, 
-    inline_link_click_ctr, Lead, Video_View, Purchase, Page_View, Link_Click,
+    inline_link_click_ctr, actions, video_play_actions, video_p50_watched_actions, 
+    video_p100_watched_actions, ad_set_contains, Lead, Video_View, Purchase, Page_View, Link_Click,
     Page_Engagement, Post_Engagement, Landing_Page_View, Post_Reaction, Post_Save,
-    Web_Lead, quality_ranking, engagement_rate_ranking, conversion_rate_ranking, 
+    Web_Lead, Video_View_Start, Video_View_Mid, Video_View_Complete, Video_View_Platform, 
+    quality_ranking, engagement_rate_ranking, conversion_rate_ranking, 
     objective, optimization_goal, merge_key
 )
 VALUES (
@@ -420,9 +472,11 @@ VALUES (
     source.reach, source.frequency, source.spend, source.clicks, source.cpc, 
     source.cpm, source.cpp, source.ctr, source.unique_clicks, source.unique_ctr, 
     source.cost_per_unique_click, source.inline_link_clicks, source.inline_link_click_ctr,
-    source.Lead, source.Video_View, source.Purchase, source.Page_View, source.Link_Click,
+    source.actions, source.video_play_actions, source.video_p50_watched_actions, 
+    source.video_p100_watched_actions, source.ad_set_contains, source.Lead, source.Video_View, source.Purchase, source.Page_View, source.Link_Click,
     source.Page_Engagement, source.Post_Engagement, source.Landing_Page_View, 
-    source.Post_Reaction, source.Post_Save, source.Web_Lead,
+    source.Post_Reaction, source.Post_Save, source.Web_Lead, source.Video_View_Start, 
+    source.Video_View_Mid, source.Video_View_Complete, source.Video_View_Platform,
     source.quality_ranking, source.engagement_rate_ranking, source.conversion_rate_ranking, 
     source.objective, source.optimization_goal, source.merge_key
 );

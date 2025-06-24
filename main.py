@@ -46,7 +46,7 @@ async def sync_ads_insights() -> Dict[str, Any]:
     try:
         # Send back a confirmation that the request was received
         logger.info("Received request to sync ads insights")
-        return {"message": "Request to sync ads insights received successfully"}
+        # return {"message": "Request to sync ads insights received successfully"}
         # 1. Get Facebook Ads data
         # logger.info("Fetching all Facebook ad IDs")
         # ad_ids = get_all_ad_ids()

@@ -41,6 +41,7 @@ SCHEMA = {
     'video_p25_watched_actions': {'type': int, 'nullable': True, 'nested': True},
     'video_p50_watched_actions': {'type': int, 'nullable': True, 'nested': True},
     'video_p75_watched_actions': {'type': int, 'nullable': True, 'nested': True},
+    'video_thruplay_watched_actions': {'type': int, 'nullable': True, 'nested': True},
 }
 
 # Helper lists for backward compatibility or quick access

@@ -447,6 +447,7 @@ def get_all_ads_insights_bulk_simple(ad_account_ids: list[str]) -> list[dict]:
         'video_play_actions', 'video_avg_time_watched_actions',
         'video_p25_watched_actions', 'video_p50_watched_actions',
         'video_p75_watched_actions', 'video_p100_watched_actions',
+        'video_thruplay_watched_actions',
 
         # Ad quality diagnostics
         'quality_ranking', 'engagement_rate_ranking', 'conversion_rate_ranking',
@@ -459,7 +460,7 @@ def get_all_ads_insights_bulk_simple(ad_account_ids: list[str]) -> list[dict]:
         'date_preset': 'last_30d',
         'level': 'ad',  # This gets insights broken down by individual ads
         'time_increment': 1,
-        'limit': 1000,  # Maximum results per page
+        'limit': 500,  # Maximum results per page
     }
     
     all_insights = []
