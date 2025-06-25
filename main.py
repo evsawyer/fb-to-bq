@@ -112,9 +112,9 @@ async def sync_ads_insights() -> Dict[str, Any]:
         # logger.info("Waiting for 1 minute before executing rollup query")
         # await asyncio.sleep(60)
 
-        logger.info("Starting to execute ads rollup query")
-        await asyncio.to_thread(execute_ads_rollup_query)
-        logger.info("Finished executing ads rollup query")
+        # logger.info("Starting to execute ads rollup query")
+        # await asyncio.to_thread(execute_ads_rollup_query)
+        # logger.info("Finished executing ads rollup query")
 
         return {
             "status": "success",

@@ -39,7 +39,9 @@ base_data AS (
     -- Meta ads fields
     ma.actions,
     ma.video_play_actions,
+    ma.video_p25_watched_actions,
     ma.video_p50_watched_actions, 
+    ma.video_p75_watched_actions,
     ma.video_p100_watched_actions,
     ma.video_thruplay_watched_actions,
     ma.date_start,
@@ -81,7 +83,10 @@ base_data AS (
 -- Extract all custom KPI mappings for each row
 custom_mappings AS (
     SELECT 
-    bd.*,
+    bd.client_id,
+    bd.ad_id,
+    bd.date_start,
+    bd.account_id,
     rule.kpi_type,
     rule.custom_kpi,
     COALESCE(
@@ -106,6 +111,7 @@ custom_action_types AS (
     client_id,
     ad_id,
     date_start,
+    -- Existing KPI columns
     MAX(CASE WHEN kpi_type = 'Lead' THEN custom_action_type END) as lead_custom_action,
     MAX(CASE WHEN kpi_type = 'Video View' THEN custom_action_type END) as video_view_custom_action,
     MAX(CASE WHEN kpi_type = 'Purchase' THEN custom_action_type END) as purchase_custom_action,
@@ -116,7 +122,16 @@ custom_action_types AS (
     MAX(CASE WHEN kpi_type = 'Landing Page View' THEN custom_action_type END) as landing_page_view_custom_action,
     MAX(CASE WHEN kpi_type = 'Post Reaction' THEN custom_action_type END) as post_reaction_custom_action,
     MAX(CASE WHEN kpi_type = 'Post Save' THEN custom_action_type END) as post_save_custom_action,
-    MAX(CASE WHEN kpi_type = 'Web Lead' THEN custom_action_type END) as web_lead_custom_action
+    MAX(CASE WHEN kpi_type = 'Web Lead' THEN custom_action_type END) as web_lead_custom_action,
+    -- New IVC metrics
+    MAX(CASE WHEN kpi_type = 'Click On Platform' THEN custom_action_type END) as click_on_platform_custom_action,
+    MAX(CASE WHEN kpi_type = 'Click To Website' THEN custom_action_type END) as click_to_website_custom_action,
+    MAX(CASE WHEN kpi_type = 'Lead Website' THEN custom_action_type END) as lead_website_custom_action,
+    MAX(CASE WHEN kpi_type = 'Video View 3sec' THEN custom_action_type END) as video_view_3sec_custom_action,
+    MAX(CASE WHEN kpi_type = 'View Content' THEN custom_action_type END) as view_content_custom_action,
+    MAX(CASE WHEN kpi_type = 'Add To Cart' THEN custom_action_type END) as add_to_cart_custom_action,
+    MAX(CASE WHEN kpi_type = 'Initiate Checkout' THEN custom_action_type END) as initiate_checkout_custom_action,
+    MAX(CASE WHEN kpi_type = 'Complete Registration' THEN custom_action_type END) as complete_registration_custom_action
     
     FROM custom_mappings
     GROUP BY client_id, ad_id, date_start
@@ -369,6 +384,144 @@ final_rollup AS (
         LIMIT 1
     ) as Video_View_Platform,
     
+    -- Extract IVC metrics with custom override logic
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.click_on_platform_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'click'
+            LIMIT 1
+        )
+    ) as Click_On_Platform,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.click_to_website_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'link_click'
+            LIMIT 1
+        )
+    ) as Click_To_Website,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.lead_website_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'onsite_web_lead'
+            LIMIT 1
+        )
+    ) as Lead_Website,
+    
+    -- Lead_Platform - TODO: Figure out what data to map to this
+    NULL as Lead_Platform,
+    
+    (
+        SELECT action.value 
+        FROM UNNEST(bd.video_p25_watched_actions) as action 
+        WHERE action.action_type = 'video_view'
+        LIMIT 1
+    ) as Video_View_Quarter,
+    
+    (
+        SELECT action.value 
+        FROM UNNEST(bd.video_p75_watched_actions) as action 
+        WHERE action.action_type = 'video_view'
+        LIMIT 1
+    ) as Video_View_Three_Quarter,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.video_view_3sec_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'video_view'
+            LIMIT 1
+        )
+    ) as Video_View_3sec,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.view_content_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'view_content'
+            LIMIT 1
+        )
+    ) as View_Content,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.add_to_cart_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'add_to_cart'
+            LIMIT 1
+        )
+    ) as Add_To_Cart,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.initiate_checkout_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'initiate_checkout'
+            LIMIT 1
+        )
+    ) as Initiate_Checkout,
+    
+    COALESCE(
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = cat.complete_registration_custom_action
+            LIMIT 1
+        ),
+        (
+            SELECT action.value 
+            FROM UNNEST(bd.actions) as action 
+            WHERE action.action_type = 'complete_registration'
+            LIMIT 1
+        )
+    ) as Complete_Registration,
+    
     -- Create unique key for merging
     CONCAT(
         COALESCE(bd.client_id, ''), '_',
@@ -446,6 +599,17 @@ UPDATE SET
     Video_View_Mid = source.Video_View_Mid,
     Video_View_Complete = source.Video_View_Complete,
     Video_View_Platform = source.Video_View_Platform,
+    Click_On_Platform = source.Click_On_Platform,
+    Click_To_Website = source.Click_To_Website,
+    Lead_Website = source.Lead_Website,
+    Lead_Platform = source.Lead_Platform,
+    Video_View_Quarter = source.Video_View_Quarter,
+    Video_View_Three_Quarter = source.Video_View_Three_Quarter,
+    Video_View_3sec = source.Video_View_3sec,
+    View_Content = source.View_Content,
+    Add_To_Cart = source.Add_To_Cart,
+    Initiate_Checkout = source.Initiate_Checkout,
+    Complete_Registration = source.Complete_Registration,
     quality_ranking = source.quality_ranking,
     engagement_rate_ranking = source.engagement_rate_ranking,
     conversion_rate_ranking = source.conversion_rate_ranking,
@@ -471,12 +635,15 @@ VALUES (
     source.adset_id, source.adset_name, source.campaign_name, source.impressions, 
     source.reach, source.frequency, source.spend, source.clicks, source.cpc, 
     source.cpm, source.cpp, source.ctr, source.unique_clicks, source.unique_ctr, 
-    source.cost_per_unique_click, source.inline_link_clicks, source.inline_link_click_ctr,
+    source.cost_per_unique_click,     source.inline_link_clicks, source.inline_link_click_ctr,
     source.actions, source.video_play_actions, source.video_p50_watched_actions, 
     source.video_p100_watched_actions, source.ad_set_contains, source.Lead, source.Video_View, source.Purchase, source.Page_View, source.Link_Click,
     source.Page_Engagement, source.Post_Engagement, source.Landing_Page_View, 
     source.Post_Reaction, source.Post_Save, source.Web_Lead, source.Video_View_Start, 
     source.Video_View_Mid, source.Video_View_Complete, source.Video_View_Platform,
+    source.Click_On_Platform, source.Click_To_Website, source.Lead_Website, source.Lead_Platform,
+    source.Video_View_Quarter, source.Video_View_Three_Quarter, source.Video_View_3sec,
+    source.View_Content, source.Add_To_Cart, source.Initiate_Checkout, source.Complete_Registration,
     source.quality_ranking, source.engagement_rate_ranking, source.conversion_rate_ranking, 
     source.objective, source.optimization_goal, source.merge_key
 );

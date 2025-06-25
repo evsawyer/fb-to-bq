@@ -48,18 +48,25 @@ def get_standard_mappings() -> List[Dict]:
     """Get standard event mappings that apply to all accounts"""
     return [
         # Standard event mappings
-        {'user_friendly_name': 'Lead', 'meta_action_type': 'lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Video View', 'meta_action_type': 'video_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Purchase', 'meta_action_type': 'purchase', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Page View', 'meta_action_type': 'page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Link Click', 'meta_action_type': 'link_click', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Page Engagement', 'meta_action_type': 'page_engagement', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Post Engagement', 'meta_action_type': 'post_engagement', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Landing Page View', 'meta_action_type': 'landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Post Reaction', 'meta_action_type': 'post_reaction', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Post Save', 'meta_action_type': 'post_save', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        {'user_friendly_name': 'Web Lead', 'meta_action_type': 'web_lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
-        
+        # {'user_friendly_name': 'Lead', 'meta_action_type': 'lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Video View', 'meta_action_type': 'video_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Purchase', 'meta_action_type': 'purchase', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Page View', 'meta_action_type': 'page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Link Click', 'meta_action_type': 'link_click', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Page Engagement', 'meta_action_type': 'page_engagement', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Post Engagement', 'meta_action_type': 'post_engagement', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Landing Page View', 'meta_action_type': 'landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Post Reaction', 'meta_action_type': 'post_reaction', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Post Save', 'meta_action_type': 'post_save', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Web Lead', 'meta_action_type': 'web_lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Click On Platform', 'meta_action_type': 'click', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Click To Website', 'meta_action_type': 'link_click', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Lead Website', 'meta_action_type': 'onsite_web_lead', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Video View 3sec', 'meta_action_type': 'video_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'View Content', 'meta_action_type': 'view_content', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Add To Cart', 'meta_action_type': 'add_to_cart', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Initiate Checkout', 'meta_action_type': 'initiate_checkout', 'mapping_type': 'standard', 'ad_account_id': 'all'},
+        # {'user_friendly_name': 'Complete Registration', 'meta_action_type': 'complete_registration', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         # {'user_friendly_name': 'Omni Landing Page View', 'meta_action_type': 'omni_landing_page_view', 'mapping_type': 'standard', 'ad_account_id': 'all'},
         # Pixel event mappings  
         # {'user_friendly_name': 'Lead', 'meta_action_type': 'offsite_conversion.fb_pixel_lead', 'mapping_type': 'pixel', 'ad_account_id': 'all'},
@@ -105,7 +112,7 @@ def update_mapping_table_with_facebook_data():
         # Add timestamp for tracking when mappings were last updated
         df['last_updated'] = pd.Timestamp.now()
         
-        table_id = "raw_ads.kpi_event_mapping"
+        table_id = "rollup_reference.kpi_event_mapping"
         
         # Use pandas_gbq.to_gbq instead of df.to_gbq
         pandas_gbq.to_gbq(
