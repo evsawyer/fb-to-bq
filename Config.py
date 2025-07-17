@@ -107,7 +107,7 @@ class PipelineConfig:
             batch_size=int(os.getenv('PIPELINE_BATCH_SIZE', '1000')),
             chunk_days=int(os.getenv('PIPELINE_CHUNK_DAYS', '7')),
             delay_between_chunks=float(os.getenv('PIPELINE_DELAY', '0.2')),
-            enable_validation=os.getenv('PIPELINE_ENABLE_VALIDATION', 'true').lower() == 'true',
+            enable_validation=os.getenv('PIPELINE_ENABLE_VALIDATION', 'false').lower() == 'true',
             update_kpi_mappings=os.getenv('PIPELINE_UPDATE_KPI_MAPPINGS', 'true').lower() == 'true'
         )
 

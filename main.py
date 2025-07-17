@@ -59,7 +59,7 @@ async def sync_ads_insights(
         Dictionary with execution results and statistics
     """
     try:
-        logger.info(f"Received test sync request - mode: {mode}, dry_run: {dry_run}")
+        logger.info(f"Received sync request - mode: {mode}, dry_run: {dry_run}")
         
         # Create configuration with optional overrides
         config = Config.from_env()
