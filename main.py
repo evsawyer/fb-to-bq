@@ -3,14 +3,18 @@ from bigquery import get_existing_records, separate_records, get_table_schema, p
 from facebook import get_ads_insights_with_delay, get_all_ad_ids, get_ads_insights, get_all_ads_insights_bulk_simple
 from validate import analyze_insights_structure, validate_insight, prepare_for_bigquery
 from kpi_event_mapping_table import update_mapping_table_with_facebook_data
-from rollup import execute_ads_rollup_query
 from dotenv import load_dotenv
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import asyncio
 import logging
 import sys
 import json
+
+# Import the new pipeline class
+from FacebookToBigQueryPipeline import FacebookToBigQueryPipeline
+from Config import Config
+
 # Configure root logger to capture all modules
 logging.basicConfig(
     level=logging.INFO,
@@ -34,94 +38,134 @@ async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
 @app.post("/sync-ads-insights")
-async def sync_ads_insights() -> Dict[str, Any]:
+async def sync_ads_insights(
+    mode: str = "incremental",
+    days_back: int = 7,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    dry_run: bool = False,
+    skip_kpi_update: bool = False,
+    use_test_table: bool = False 
+) -> Dict[str, Any]:
     """
-    Endpoint to fetch Facebook Ads insights and sync them to BigQuery.
-    This endpoint:
-    1. Fetches all ad IDs
-    2. Gets insights for those ads
-    3. Validates and prepares the data
-    4. Syncs with BigQuery (updates/inserts as needed)
+    Test endpoint using the new class-based pipeline architecture.
+    
+    Args:
+        mode: Sync mode - "incremental", "full", or "daterange"
+        days_back: For incremental mode, number of days to sync (default: 7)
+        start_date: For daterange mode, start date (YYYY-MM-DD)
+        end_date: For daterange mode, end date (YYYY-MM-DD)
+        dry_run: If True, validate data but don't write to BigQuery
+        skip_kpi_update: If True, skip updating KPI mappings
+        use_test_table: If True, write to meta_ads_test instead of meta_ads (default: False)
+        
+    Returns:
+        Dictionary with execution results and statistics
     """
     try:
-        # Send back a confirmation that the request was received
-        logger.info("Received request to sync ads insights")
-        # return {"message": "Request to sync ads insights received successfully"}
-        # 1. Get Facebook Ads data
-        # logger.info("Fetching all Facebook ad IDs")
-        # ad_ids = get_all_ad_ids()
-        # logger.info(f"Retrieved {len(ad_ids)} ad IDs")
-
-        # logger.info("Fetching insights for all ad IDs")
-        # raw_insights = get_ads_insights_with_delay(ad_ids)
-        # insights_list = [x for x in raw_insights]
-        # logger.info(f"Retrieved insights for {len(insights_list)} ads")
-        print("🚀 Starting bulk insights fetch with rate limit monitoring...")
-        ad_account_ids = json.loads(os.getenv("FB_AD_ACCOUNT_ID"))
-        # Use the bulk method
-        insights = get_all_ads_insights_bulk_simple(ad_account_ids)
-        insights_list = [x for x in insights]
-
-        # 2. Validate and prepare records
-        logger.info("Validating and preparing insights for BigQuery")
-        valid_insights = []
-        for insight in insights_list:
-            if validate_insight(insight):
-                prepared_data = prepare_for_bigquery(insight)
-                if prepared_data:
-                    valid_insights.append(prepared_data)
-
-        if not valid_insights:
+        logger.info(f"Received test sync request - mode: {mode}, dry_run: {dry_run}")
+        
+        # Create configuration with optional overrides
+        config = Config.from_env()
+        
+        # Apply endpoint parameters to config
+        if skip_kpi_update:
+            config.pipeline.update_kpi_mappings = False
+            
+        # Use test table if requested
+        if use_test_table:
+            config.bigquery.meta_ads_table = config.bigquery.test_meta_ads_table
+            
+        # Initialize pipeline with config
+        pipeline = FacebookToBigQueryPipeline(config)
+        
+        # Execute based on mode
+        if mode == "incremental":
+            logger.info(f"Running incremental sync for {days_back} days")
+            results = await asyncio.to_thread(
+                pipeline.run_incremental_sync,
+                days_back=days_back
+            )
+            
+        elif mode == "daterange":
+            if not start_date or not end_date:
+                raise HTTPException(
+                    status_code=400,
+                    detail="start_date and end_date are required for daterange mode"
+                )
+            logger.info(f"Running date range sync from {start_date} to {end_date}")
+            results = await asyncio.to_thread(
+                pipeline.run_date_range_sync,
+                start_date=start_date,
+                end_date=end_date
+            )
+            
+        elif mode == "full":
+            logger.info("Running full sync (last 30 days)")
+            results = await asyncio.to_thread(
+                pipeline.run_full_sync,
+                dry_run=dry_run
+            )
+            
+        else:
             raise HTTPException(
                 status_code=400,
-                detail="No valid insights found to process"
+                detail=f"Invalid mode: {mode}. Must be 'incremental', 'full', or 'daterange'"
             )
-
-        # 3. Get BigQuery configuration
-        dataset_id = os.getenv('DATASET_ID')
-        table_id = os.getenv('TABLE_ID')
-
-        # 4. Get existing records
-        # date_starts = list(set(r['date_start'] for r in valid_insights))
-        # date_stops = list(set(r['date_stop'] for r in valid_insights))
-        # ad_ids = list(set(r['ad_id'] for r in valid_insights))
-
-        # existing = list(get_existing_records(dataset_id, table_id, date_starts, date_stops, ad_ids))
-
-        # # 5. Separate updates and inserts
-        # updates, inserts = separate_records(valid_insights, existing)
-
-        # 6. Process records
-        logger.info("Starting to process records for BigQuery")
-        await asyncio.to_thread(
-            process_records,
-            dataset_id=dataset_id,
-            table_id=table_id,
-            new_records=valid_insights,
-            batch_size=1000
-        )
-        logger.info("Finished processing records for BigQuery")
         
-        # logger.info("Waiting for 1 minute before updating mapping table")
-        # await asyncio.sleep(60)
-
-        logger.info("Starting to update mapping table with Facebook data")
-        await asyncio.to_thread(update_mapping_table_with_facebook_data)
-        logger.info("Finished updating mapping table with Facebook data")
-        
-        # logger.info("Waiting for 1 minute before executing rollup query")
-        # await asyncio.sleep(60)
-
-        # logger.info("Starting to execute ads rollup query")
-        # await asyncio.to_thread(execute_ads_rollup_query)
-        # logger.info("Finished executing ads rollup query")
-
-        return {
-            "status": "success",
+        # Add endpoint parameters to results for transparency
+        results['parameters'] = {
+            'mode': mode,
+            'dry_run': dry_run,
+            'skip_kpi_update': skip_kpi_update,
+            'use_test_table': use_test_table,
+            'target_table': config.bigquery.meta_ads_table,
+            'days_back': days_back if mode == 'incremental' else None,
+            'date_range': {
+                'start': start_date,
+                'end': end_date
+            } if mode == 'daterange' else None
         }
+        
+        return results
+        
+    except ValueError as e:
+        # Configuration errors
+        raise HTTPException(
+            status_code=400,
+            detail=f"Configuration error: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Test sync failed with error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in test sync: {str(e)}"
+        )
 
+
+@app.get("/test-sync-status")
+async def test_sync_status() -> Dict[str, Any]:
+    """
+    Get the current status and configuration of the test pipeline.
+    Useful for debugging and verifying configuration.
+    """
+    try:
+        # Create pipeline to check configuration
+        pipeline = FacebookToBigQueryPipeline()
+        status = pipeline.get_pipeline_status()
+        
+        # Add environment info
+        status['environment'] = {
+            'dataset_id': os.getenv('DATASET_ID', 'Not set'),
+            'table_id': os.getenv('TABLE_ID', 'Not set'),
+            'fb_account_count': len(json.loads(os.getenv('FB_AD_ACCOUNT_ID', '[]'))),
+            'pipeline_mode': 'class-based (new)'
+        }
+        
+        return status
+        
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error processing ads insights: {str(e)}"
+            detail=f"Error getting pipeline status: {str(e)}"
         )

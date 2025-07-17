@@ -11,12 +11,13 @@ RUN uv sync --locked
 
 # Copy only the necessary application files
 COPY main.py .
-COPY bigquery.py .
-COPY facebook.py .
-COPY validate.py .
-COPY schema.py .
-COPY kpi_event_mapping_table.py .
-COPY rollup.py .
+COPY BigQueryClient.py .
+COPY FacebookClient.py .
+COPY DataValidator.py .
+COPY SchemaRegistry.py .
+COPY KpiEventMappingTable.py .
+COPY Config.py .
+COPY FacebookToBigQueryPipeline.py .
 
 # Set the PORT environment variable to 8080
 ENV PORT=8080
