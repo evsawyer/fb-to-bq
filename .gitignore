@@ -3,3 +3,4 @@
 test/
 *.json
 .replit
+__pycache__/
