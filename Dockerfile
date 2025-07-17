@@ -15,10 +15,9 @@ COPY BigQueryClient.py .
 COPY FacebookClient.py .
 COPY DataValidator.py .
 COPY SchemaRegistry.py .
-COPY KpiEventMappingTable.py .
 COPY Config.py .
 COPY FacebookToBigQueryPipeline.py .
-COPY KPIEventMappingManager.py .
+COPY KPIMappingManager.py .
 
 # Set the PORT environment variable to 8080
 ENV PORT=8080
