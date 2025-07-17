@@ -107,10 +107,6 @@ class SchemaRegistry:
         'video_p50_watched_actions': FieldSchema(int, nested=True, description="50% video views"),
         'video_p75_watched_actions': FieldSchema(int, nested=True, description="75% video views"),
         'video_thruplay_watched_actions': FieldSchema(int, nested=True, description="Video thruplay views"),
-        
-        # Additional fields from the original schema
-        'action_values': FieldSchema(float, nested=True, description="Action values by type"),
-        'purchase_roas': FieldSchema(float, nested=True, description="Purchase ROAS"),
     }
     
     # KPI Event Mapping Schema
