@@ -18,6 +18,7 @@ COPY SchemaRegistry.py .
 COPY KpiEventMappingTable.py .
 COPY Config.py .
 COPY FacebookToBigQueryPipeline.py .
+COPY KPIEventMappingTable.py .
 
 # Set the PORT environment variable to 8080
 ENV PORT=8080
