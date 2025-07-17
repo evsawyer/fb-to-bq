@@ -1,8 +1,4 @@
 from fastapi import FastAPI, HTTPException
-from bigquery import get_existing_records, separate_records, get_table_schema, process_records
-from facebook import get_ads_insights_with_delay, get_all_ad_ids, get_ads_insights, get_all_ads_insights_bulk_simple
-from validate import analyze_insights_structure, validate_insight, prepare_for_bigquery
-from kpi_event_mapping_table import update_mapping_table_with_facebook_data
 from dotenv import load_dotenv
 import os
 from typing import List, Dict, Any, Optional
