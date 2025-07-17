@@ -149,6 +149,51 @@ class FacebookClient:
         else:
             return self._get_insights_bulk(ad_account_ids, fields)
     
+    def _deduplicate_insights(self, insights: List[dict]) -> List[dict]:
+        """Deduplicate insights based on key fields (ad_id, date_start, account_id)
+        
+        When duplicates are found, keeps the one with the latest date_stop
+        
+        Args:
+            insights: List of insight records
+            
+        Returns:
+            List of deduplicated insights
+        """
+        if not insights:
+            return insights
+            
+        # Create a dictionary to store unique records
+        unique_insights = {}
+        
+        for insight in insights:
+            # Create unique key from ad_id, date_start, and account_id
+            key = (
+                insight.get('ad_id'),
+                insight.get('date_start'),
+                insight.get('account_id')
+            )
+            
+            # If we haven't seen this key before, or if this record has a later date_stop
+            if key not in unique_insights:
+                unique_insights[key] = insight
+            else:
+                # Compare date_stop to keep the latest one
+                existing_date_stop = unique_insights[key].get('date_stop', '')
+                new_date_stop = insight.get('date_stop', '')
+                
+                if new_date_stop > existing_date_stop:
+                    unique_insights[key] = insight
+        
+        # Convert back to list
+        deduplicated = list(unique_insights.values())
+        
+        if len(deduplicated) < len(insights):
+            logger.info(f"Deduplication: {len(insights)} → {len(deduplicated)} records "
+                       f"({len(insights) - len(deduplicated)} duplicates removed)")
+        
+        return deduplicated
+    
     def _get_insights_bulk(self, ad_account_ids: List[str], fields: List[str]) -> List[dict]:
         """Fetch insights for ALL ads in accounts with minimal API calls"""
         params = {
@@ -181,7 +226,7 @@ class FacebookClient:
                 continue
         
         logger.info(f"🎉 Total: {len(all_insights)} insights")
-        return all_insights
+        return self._deduplicate_insights(all_insights)
     
     def _get_insights_date_range(self,
                                 ad_account_ids: List[str],
@@ -245,7 +290,7 @@ class FacebookClient:
                 time.sleep(delay_between_chunks)
         
         logger.info(f"✅ Fetched {len(all_insights)} total insights")
-        return all_insights
+        return self._deduplicate_insights(all_insights)
     
     def get_custom_conversions(self, ad_account_id: str) -> List[dict]:
         """Fetch custom conversions for a specific ad account

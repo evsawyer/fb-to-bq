@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Tuple, Any
 from google.oauth2 import service_account
 from google.cloud import bigquery
 from dotenv import load_dotenv
+from SchemaRegistry import SchemaRegistry
 
 load_dotenv()
 
@@ -302,108 +303,8 @@ class BigQueryClient:
         Returns:
             True if table exists or was created, False on error
         """
-        # Define the meta_ads schema
-        schema = [
-            # Metadata fields
-            bigquery.SchemaField("account_id", "STRING"),
-            bigquery.SchemaField("account_name", "STRING"),
-            bigquery.SchemaField("account_currency", "STRING"),
-            bigquery.SchemaField("ad_id", "STRING"),
-            bigquery.SchemaField("ad_name", "STRING"),
-            bigquery.SchemaField("adset_id", "STRING"),
-            bigquery.SchemaField("adset_name", "STRING"),
-            bigquery.SchemaField("campaign_id", "STRING"),
-            bigquery.SchemaField("campaign_name", "STRING"),
-            bigquery.SchemaField("date_start", "DATE"),
-            bigquery.SchemaField("date_stop", "DATE"),
-            
-            # Performance metrics
-            bigquery.SchemaField("impressions", "INTEGER"),
-            bigquery.SchemaField("reach", "INTEGER"),
-            bigquery.SchemaField("frequency", "FLOAT"),
-            bigquery.SchemaField("spend", "FLOAT"),
-            bigquery.SchemaField("clicks", "INTEGER"),
-            bigquery.SchemaField("cpc", "FLOAT"),
-            bigquery.SchemaField("cpm", "FLOAT"),
-            bigquery.SchemaField("cpp", "FLOAT"),
-            bigquery.SchemaField("ctr", "FLOAT"),
-            bigquery.SchemaField("unique_clicks", "INTEGER"),
-            bigquery.SchemaField("unique_ctr", "FLOAT"),
-            bigquery.SchemaField("cost_per_unique_click", "FLOAT"),
-            bigquery.SchemaField("inline_link_clicks", "INTEGER"),
-            bigquery.SchemaField("inline_link_click_ctr", "FLOAT"),
-            bigquery.SchemaField("website_ctr", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "FLOAT")
-            ]),
-            
-            # Action metrics
-            bigquery.SchemaField("actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("action_values", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "FLOAT")
-            ]),
-            bigquery.SchemaField("unique_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("cost_per_action_type", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "FLOAT")
-            ]),
-            bigquery.SchemaField("cost_per_unique_action_type", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "FLOAT")
-            ]),
-            
-            # ROAS
-            bigquery.SchemaField("purchase_roas", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "FLOAT")
-            ]),
-            
-            # Video engagement
-            bigquery.SchemaField("video_play_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("video_avg_time_watched_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("video_p25_watched_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("video_p50_watched_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("video_p75_watched_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("video_p100_watched_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            bigquery.SchemaField("video_thruplay_watched_actions", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("action_type", "STRING"),
-                bigquery.SchemaField("value", "INTEGER")
-            ]),
-            
-            # Ad quality
-            bigquery.SchemaField("quality_ranking", "STRING"),
-            bigquery.SchemaField("engagement_rate_ranking", "STRING"),
-            bigquery.SchemaField("conversion_rate_ranking", "STRING"),
-            
-            # Objectives
-            bigquery.SchemaField("objective", "STRING"),
-            bigquery.SchemaField("optimization_goal", "STRING"),
-        ]
+        # Get schema from SchemaRegistry - single source of truth
+        schema = SchemaRegistry.to_bigquery_schema('insights')
         
         return self.create_table_if_not_exists(dataset_id, table_id, schema)
     
@@ -504,21 +405,15 @@ class BigQueryClient:
         Returns:
             MERGE SQL query
         """
+        # Get all fields from SchemaRegistry
+        schema = SchemaRegistry.get_schema('insights')
+        all_field_names = list(schema.keys())
+        
+        # Define key fields that shouldn't be updated
+        key_fields = {'account_id', 'ad_id', 'date_start'}
+        
         # List of fields to update (excluding key fields)
-        update_fields = [
-            'account_name', 'account_currency', 'ad_name', 'adset_id', 'adset_name',
-            'campaign_id', 'campaign_name', 'date_stop', 'impressions', 'reach',
-            'frequency', 'spend', 'clicks', 'cpc', 'cpm', 'cpp', 'ctr',
-            'unique_clicks', 'unique_ctr', 'cost_per_unique_click',
-            'inline_link_clicks', 'inline_link_click_ctr', 'website_ctr',
-            'actions', 'action_values', 'unique_actions', 'cost_per_action_type',
-            'cost_per_unique_action_type', 'purchase_roas', 'video_play_actions',
-            'video_avg_time_watched_actions', 'video_p25_watched_actions',
-            'video_p50_watched_actions', 'video_p75_watched_actions',
-            'video_p100_watched_actions', 'video_thruplay_watched_actions',
-            'quality_ranking', 'engagement_rate_ranking', 'conversion_rate_ranking',
-            'objective', 'optimization_goal'
-        ]
+        update_fields = [field for field in all_field_names if field not in key_fields]
         
         # Build UPDATE SET clause
         update_clause = ',\n        '.join([f"{field} = S.{field}" for field in update_fields])

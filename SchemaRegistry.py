@@ -1,4 +1,5 @@
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any, Type, Optional, List
+from google.cloud import bigquery
 
 
 class FieldSchema:
@@ -165,3 +166,52 @@ class SchemaRegistry:
                 if info.nested
             ]
         } 
+    
+    @classmethod
+    def to_bigquery_schema(cls, schema_name: str = 'insights') -> List[bigquery.SchemaField]:
+        """Convert FieldSchema to BigQuery SchemaField objects
+        
+        Args:
+            schema_name: Name of the schema to convert (default: 'insights')
+            
+        Returns:
+            List of BigQuery SchemaField objects
+        """
+        schema = cls.get_schema(schema_name)
+        bq_fields = []
+        
+        # Type mapping from Python types to BigQuery types
+        type_map = {
+            int: 'INTEGER',
+            float: 'FLOAT',
+            str: 'STRING',
+            'date': 'DATE'
+        }
+        
+        for field_name, field_info in schema.items():
+            if field_info.nested:
+                # Handle nested fields (RECORD type with repeated mode)
+                # Determine the value type for the nested field
+                value_type = type_map.get(field_info.type, 'STRING')
+                
+                sub_fields = [
+                    bigquery.SchemaField("action_type", "STRING"),
+                    bigquery.SchemaField("value", value_type)
+                ]
+                
+                bq_field = bigquery.SchemaField(
+                    field_name, 
+                    "RECORD", 
+                    mode="REPEATED", 
+                    fields=sub_fields
+                )
+            else:
+                # Handle simple fields
+                bq_type = type_map.get(field_info.type, 'STRING')
+                mode = "NULLABLE" if field_info.nullable else "REQUIRED"
+                
+                bq_field = bigquery.SchemaField(field_name, bq_type, mode=mode)
+            
+            bq_fields.append(bq_field)
+        
+        return bq_fields 
